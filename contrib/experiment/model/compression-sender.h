@@ -88,6 +88,7 @@ private:
   uint16_t m_tcpPort_tail;
   Time m_tcp_head_rstReceivedTime;   // Time when the head packet's RST is received
   Time m_tcp_tail_rstReceivedTime;   // Time when the tail packet's RST is received
+  uint8_t m_ttl;                    // TTL of the probe packets
 
   // Next scheduled event
   EventId m_sendEvent;

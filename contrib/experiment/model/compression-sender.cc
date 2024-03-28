@@ -65,6 +65,11 @@ CompressionSender::GetTypeId (void)
                     UintegerValue (0),
                     MakeUintegerAccessor (&CompressionSender::m_initialPacketTrainLength),
                     MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("TTL",
+                   "TimeToLive of UPD packets",
+                   UintegerValue (255),
+                   MakeUintegerAccessor (&CompressionSender::m_ttl),
+                   MakeUintegerChecker<uint8_t> ())
   ;
   return tid;
 }
@@ -74,6 +79,7 @@ CompressionSender::CompressionSender ()
     NS_LOG_FUNCTION (this);//  m_initialized = 0;
   m_sent = 0;
   m_socket = 0;
+  m_ttl = 255;
   m_sendEvent = EventId ();
   m_initialPacketTrainLength=0;
 }
@@ -160,6 +166,7 @@ CompressionSender::StartApplication (void)
     {
         TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
         m_socket = Socket::CreateSocket (GetNode (), tid);
+        m_socket->SetIpTtl(m_ttl);
         if (Ipv4Address::IsMatchingType(m_peerAddress) == true)
         {
             if (m_socket->Bind () == -1)
@@ -202,6 +209,7 @@ CompressionSender::StartApplication (void)
         {
             TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
             m_socket_tcp = Socket::CreateSocket (GetNode (), tid);
+            // m_socket_tcp->SetIpTtl(m_ttl);
             if (Ipv4Address::IsMatchingType(m_peerAddress) == true)
             {
                 if (m_socket_tcp->Bind () == -1)

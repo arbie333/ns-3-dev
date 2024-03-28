@@ -1,8 +1,8 @@
 // Network Topology
 //
-//                                10.1.1.0  255.255.255.0
-// sender(s0) -------------- r1(p0) ---------------- r2(p1) -------------- receiver(r0)
-//            point-to-point        compression link        point-to-point
+//                               
+// sender(p0) --- r1(p1) --- r1(p2) --- r1(p3) ---------------- r2(p4) --- receiver(r5)
+//            p2p        p2p        p2p        compression link        p2p
 //
 
 #include "ns3/applications-module.h"
@@ -55,8 +55,12 @@ main(int argc, char* argv[])
     CommandLine cmd;
 
     std::string filename;
+    std::string ttlString;
+    std::string entropyString;
 
     cmd.AddValue("filename", "Name of the config file", filename);
+    cmd.AddValue("ttl", "Time to live of the UDP packets", ttlString);
+    cmd.AddValue("entropy", "Entropy of the UDP packets", entropyString);
     cmd.Parse(argc, argv);
 
     if (filename.empty())
@@ -65,10 +69,34 @@ main(int argc, char* argv[])
         return 0;
     }
 
+    // Set the TTL value
+    u_int8_t ttl = 225;
+    int ttl_int = std::stoi(ttlString);
+    if (ttl_int >= 0 && ttl_int <= 255)
+    {
+        ttl = static_cast<u_int8_t>(ttl_int);
+    }
+    else
+    {
+        std::cout << "Invalid TTL value. Using default value of 225" << std::endl;
+    }
+
+    // Set the entropy value
+    uint8_t entropy = 'h';
+    if (entropyString == "l" || entropyString == "h")
+    {
+        entropy = entropyString[0];
+    }
+    else
+    {
+        std::cout << "Invalid entropy value. Using default value of 'h'" << std::endl;
+    }
+
     double_t send_interval = 0.00000001;
     std::string outerLinkCapacity =
         "100Mbps";                 // default capacity of the outer link (non compression link)
     bool enableCompression = true; // default value for compression
+    const int NODE_SIZE = 6;  // number of nodes in the network
 
     // Read the config file
     CompConfig config;
@@ -83,34 +111,46 @@ main(int argc, char* argv[])
     //
 
     NodeContainer nodes;
-    nodes.Create(4);
+    nodes.Create(NODE_SIZE);
 
-    NodeContainer s0p0 = NodeContainer(nodes.Get(0), nodes.Get(1)); // sender to router1
-    NodeContainer p0p1 = NodeContainer(nodes.Get(1), nodes.Get(2)); // router1 to router2
-    NodeContainer p1r0 = NodeContainer(nodes.Get(2), nodes.Get(3)); // router2 to receiver
+    // Create an array of NdoeContainer
+    NodeContainer nodeContainerArray[NODE_SIZE -1];
+    for (int i = 0; i < NODE_SIZE -1 ; i++)
+    {
+        nodeContainerArray[i] = NodeContainer(nodes.Get(i), nodes.Get(i + 1));
+    }
+
+    // NodeContainer s0p0 = NodeContainer(nodes.Get(0), nodes.Get(1)); // sender to router1
+    // NodeContainer p0p1 = NodeContainer(nodes.Get(1), nodes.Get(2)); // router1 to router2
+    // NodeContainer p1r0 = NodeContainer(nodes.Get(2), nodes.Get(3)); // router2 to receiver
 
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute("DataRate", StringValue(outerLinkCapacity));
     p2p.SetChannelAttribute("Delay", StringValue("2ms"));
     p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue("655350000p"));
-    NetDeviceContainer s0p0_device =
-        p2p.Install(s0p0); // set the link properties of sender to router1
-    NetDeviceContainer p1r0_device =
-        p2p.Install(p1r0); // set the link properties of router2 to receiver
+    NetDeviceContainer netDeviceContainerArray[NODE_SIZE - 1];
+    for (int i = 0; i < NODE_SIZE - 1; i++)
+    {   
+        if (i == 3) {continue;}  // skip the compression link
+        netDeviceContainerArray[i] = p2p.Install(nodeContainerArray[i]);
+    }
+    // NetDeviceContainer s0p0_device = p2p.Install(s0p0); // set the link properties of sender to router1
+    // NetDeviceContainer p1r0_device = p2p.Install(p1r0); // set the link properties of router2 to receiver
 
     CompressionHelper compHepler;
     compHepler.SetDeviceAttribute("DataRate", StringValue(config.compression_link_capacity));
     compHepler.SetChannelAttribute("Delay", StringValue("2ms"));
-    NetDeviceContainer p0p1_device =
-        compHepler.Install(p0p1); // set the link properties of router1 to router2
+    NetDeviceContainer compression_device = compHepler.Install(nodeContainerArray[3]); // set the link properties of compression link between p3 and p4
 
-    // Set p0 to be a compression device
-    Ptr<CompressionNetDevice> p0_device = DynamicCast<CompressionNetDevice>(p0p1_device.Get(0));
-    p0_device->SetEnableCompression(enableCompression);
-    p0_device->GetQueue()->SetAttribute("MaxSize", StringValue("655350000p"));
-    // Set p1 to be a compression device
-    Ptr<CompressionNetDevice> p1_device = DynamicCast<CompressionNetDevice>(p0p1_device.Get(1));
-    p1_device->SetEnableDecompression(enableCompression);
+    // Set p3 to be a compression device
+    Ptr<CompressionNetDevice> p3_device = DynamicCast<CompressionNetDevice>(compression_device.Get(0));
+    p3_device->SetEnableCompression(enableCompression);
+    p3_device->GetQueue()->SetAttribute("MaxSize", StringValue("655350000p"));
+    // Set p4 to be a compression device
+    Ptr<CompressionNetDevice> p4_device = DynamicCast<CompressionNetDevice>(compression_device.Get(1));
+    p4_device->SetEnableDecompression(enableCompression);
+
+
 
     // Create the Internet stacks
     InternetStackHelper stack;
@@ -118,24 +158,30 @@ main(int argc, char* argv[])
 
     // Create addresses
     Ipv4AddressHelper address;
+    Ipv4InterfaceContainer interface_container[NODE_SIZE];
     address.SetBase("10.1.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer s0p0_interface = address.Assign(s0p0_device);
+    interface_container[0] = address.Assign(netDeviceContainerArray[0]);
     address.SetBase("10.1.2.0", "255.255.255.0");
-    Ipv4InterfaceContainer p0p1_interface = address.Assign(p0p1_device);
+    interface_container[1] = address.Assign(netDeviceContainerArray[1]);
     address.SetBase("10.1.3.0", "255.255.255.0");
-    Ipv4InterfaceContainer p1r0_interface = address.Assign(p1r0_device);
+    interface_container[2] = address.Assign(netDeviceContainerArray[2]);
+    address.SetBase("10.1.4.0", "255.255.255.0");
+    interface_container[3] = address.Assign(compression_device);
+    address.SetBase("10.1.5.0", "255.255.255.0");
+    interface_container[4] = address.Assign(netDeviceContainerArray[4]);
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // Create a sender application
-    CompressionSenderHelper senderHelper(p1r0_interface.GetAddress(1),
+    CompressionSenderHelper senderHelper(interface_container[4].GetAddress(1),
                                          config.UDP_dest_port); // set destination address and port
     senderHelper.SetAttribute("MaxPackets", UintegerValue(config.UDP_packet_number));
     senderHelper.SetAttribute("Interval", TimeValue(Seconds(send_interval)));
     senderHelper.SetAttribute("PacketSize", UintegerValue(config.UDP_payload_size));
+    senderHelper.SetAttribute("TTL", UintegerValue(ttl));
 
     ApplicationContainer senderApp = senderHelper.Install(nodes.Get(0));
-    senderHelper.GetSender()->SetEntropy(config.entropy);
+    senderHelper.GetSender()->SetEntropy(entropy);
     senderHelper.GetSender()->SetTcpPort(config.TCP_dest_port_headSyn,
                                          config.TCP_dest_port_tailSyn);
     senderApp.Start(Seconds(1.0));
@@ -147,13 +193,15 @@ main(int argc, char* argv[])
     receiverHelper.SetAttribute("Interval", TimeValue(Seconds(send_interval)));
     receiverHelper.SetAttribute("PacketSize", UintegerValue(config.UDP_payload_size));
 
-    ApplicationContainer receiverApp = receiverHelper.Install(nodes.Get(3));
+    ApplicationContainer receiverApp = receiverHelper.Install(nodes.Get(NODE_SIZE - 1));
     receiverHelper.GetReceiver()->SetLogFileName(config.output_file);
     receiverApp.Start(Seconds(1.0));
     receiverApp.Stop(Seconds(10.0));
 
     // Enable pcap
-    p2p.EnablePcapAll("compression", true);
+    // p2p.EnablePcapAll("compression", true);
+    std::string pcapFileName = "ttl_" + ttlString + "_entropy_"+ entropyString;
+    p2p.EnablePcap(pcapFileName, netDeviceContainerArray[0].Get(0), true);
     compHepler.EnablePcapAll("compressor_node", true);
 
     Simulator::Run();
