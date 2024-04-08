@@ -1,7 +1,7 @@
 // Network Topology
 //
 //                               
-// sender(p0) --- r1(p1) --- r1(p2) --- r1(p3) ---------------- r2(p4) --- receiver(r5)
+// sender(p0) --- r1(p1) --- r2(p2) --- r3(p3) ---------------- r2(p4) --- receiver(p5)
 //            p2p        p2p        p2p        compression link        p2p
 //
 

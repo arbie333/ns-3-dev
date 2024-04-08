@@ -40,9 +40,9 @@ struct CompConfig
     int TCP_dest_port_part1;
     int UDP_payload_size;
     int UDP_packet_number;
-    int UDP_packet_TTL;
+
     std::string compression_link_capacity;
-    uint8_t entropy;
+
     std::string output_file;
 };
 
@@ -55,8 +55,17 @@ main(int argc, char* argv[])
     CommandLine cmd;
 
     std::string filename;
+    std::string packetNumber;
+    std::string compLinkCapacity;
+    std::string entropyString;
+    std::string payloadString;
 
     cmd.AddValue("filename", "Name of the config file", filename);
+    cmd.AddValue("packetNumber", "Number of packets to send", packetNumber);
+    cmd.AddValue("compLinkCap", "Capacity of the compression link",
+                 compLinkCapacity);
+    cmd.AddValue("entropy", "Entropy of the UDP packets", entropyString);
+    cmd.AddValue("payload", "Size of the UDP payload", payloadString);
     cmd.Parse(argc, argv);
 
     if (filename.empty())
@@ -64,6 +73,42 @@ main(int argc, char* argv[])
         std::cout << "Please provide a config file" << std::endl;
         return 0;
     }
+
+    // Set the packet number
+    int packet_number =6000;
+    if (!packetNumber.empty())
+    {
+        packet_number= std::stoi(packetNumber);
+        if (packet_number <= 0)
+        {
+            std::cerr << "Invalid packet number" << std::endl;
+            packet_number = 6000;
+        }
+    }
+
+     // Set the entropy value
+    uint8_t entropy = 'h';
+    if (entropyString == "l" || entropyString == "h")
+    {
+        entropy = entropyString[0];
+    }
+    else
+    {
+        std::cout << "Invalid entropy value. Using default value of 'h'" << std::endl;
+    }
+
+    // Set the payload size
+    int payloadSize = 1100;
+    if (!payloadString.empty())
+    {
+        payloadSize = std::stoi(payloadString);
+        if (payloadSize <= 0)
+        {
+            std::cerr << "Invalid payload size" << std::endl;
+            payloadSize = 1100;
+        }
+    }
+    std::cout << "Payload size: " << payloadSize << std::endl;
 
     double_t send_interval = 0.00000001;
     std::string outerLinkCapacity =
@@ -99,7 +144,7 @@ main(int argc, char* argv[])
         p2p.Install(p1r0); // set the link properties of router2 to receiver
 
     CompressionHelper compHepler;
-    compHepler.SetDeviceAttribute("DataRate", StringValue(config.compression_link_capacity));
+    compHepler.SetDeviceAttribute("DataRate", StringValue(compLinkCapacity));
     compHepler.SetChannelAttribute("Delay", StringValue("2ms"));
     NetDeviceContainer p0p1_device =
         compHepler.Install(p0p1); // set the link properties of router1 to router2
@@ -130,12 +175,12 @@ main(int argc, char* argv[])
     // Create a sender application
     CompressionSenderHelper senderHelper(p1r0_interface.GetAddress(1),
                                          config.UDP_dest_port); // set destination address and port
-    senderHelper.SetAttribute("MaxPackets", UintegerValue(config.UDP_packet_number));
+    senderHelper.SetAttribute("MaxPackets", UintegerValue(packet_number));
     senderHelper.SetAttribute("Interval", TimeValue(Seconds(send_interval)));
-    senderHelper.SetAttribute("PacketSize", UintegerValue(config.UDP_payload_size));
+    senderHelper.SetAttribute("PacketSize", UintegerValue(payloadSize));
 
     ApplicationContainer senderApp = senderHelper.Install(nodes.Get(0));
-    senderHelper.GetSender()->SetEntropy(config.entropy);
+    senderHelper.GetSender()->SetEntropy(entropy);
     senderHelper.GetSender()->SetTcpPort(config.TCP_dest_port_headSyn,
                                          config.TCP_dest_port_tailSyn);
     senderApp.Start(Seconds(1.0));
@@ -143,9 +188,9 @@ main(int argc, char* argv[])
 
     // Create a receiver application
     CompressionReceiverHelper receiverHelper(config.UDP_dest_port);
-    receiverHelper.SetAttribute("NumPackets", UintegerValue(config.UDP_packet_number));
+    receiverHelper.SetAttribute("NumPackets", UintegerValue(packet_number));
     receiverHelper.SetAttribute("Interval", TimeValue(Seconds(send_interval)));
-    receiverHelper.SetAttribute("PacketSize", UintegerValue(config.UDP_payload_size));
+    receiverHelper.SetAttribute("PacketSize", UintegerValue(payloadSize));
 
     ApplicationContainer receiverApp = receiverHelper.Install(nodes.Get(3));
     receiverHelper.GetReceiver()->SetLogFileName(config.output_file);
@@ -153,7 +198,14 @@ main(int argc, char* argv[])
     receiverApp.Stop(Seconds(10.0));
 
     // Enable pcap
-    p2p.EnablePcapAll("compression", true);
+    // for variable packet number and entropy
+    // std::string pcapFileName = "PacketNum_" + packetNumber + "_Entropy_" + entropyString;
+    // for variable payload size
+    //std::string pcapFileName = "Payload_" + payloadString + + "_Entropy_" + entropyString;
+    // for variable compression link capacity
+    std::string pcapFileName = "CompLinkCap_" + compLinkCapacity + + "_Entropy_" + entropyString;
+
+    p2p.EnablePcap(pcapFileName, s0p0_device.Get(0), true);
     compHepler.EnablePcapAll("compressor_node", true);
 
     Simulator::Run();
@@ -235,17 +287,9 @@ readConfigFile(const std::string& filename, CompConfig& config)
         {
             config.UDP_packet_number = std::stoi(value);
         }
-        else if (key == "UDP_packet_TTL")
-        {
-            config.UDP_packet_TTL = std::stoi(value);
-        }
         else if (key == "compression_link_capacity")
         {
             config.compression_link_capacity = value;
-        }
-        else if (key == "entropy")
-        {
-            config.entropy = value[0];
         }
         else if (key == "output_file")
         {
