@@ -29,6 +29,7 @@ build_lib(
                  model/compression-packet-gen.h
                  model/compression-sender.h
                  model/compression-receiver.h
+                 model/custom-tcp-socket-base.h
                  helper/compression-sender-receiver-helper.h
     LIBRARIES_TO_LINK ${libcore}
                       ${libinternet}

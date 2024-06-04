@@ -203,10 +203,11 @@ main(int argc, char* argv[])
     // for variable payload size
     //std::string pcapFileName = "Payload_" + payloadString + + "_Entropy_" + entropyString;
     // for variable compression link capacity
-    std::string pcapFileName = "CompLinkCap_" + compLinkCapacity + + "_Entropy_" + entropyString;
+    // std::string pcapFileName = "CompLinkCap_" + compLinkCapacity + + "_Entropy_" + entropyString;
 
-    p2p.EnablePcap(pcapFileName, s0p0_device.Get(0), true);
-    compHepler.EnablePcapAll("compressor_node", true);
+    // p2p.EnablePcap(pcapFileName, s0p0_device.Get(0), true);
+    p2p.EnablePcapAll("compression_link_" + entropyString, true);
+    compHepler.EnablePcapAll("compressor_node_" + entropyString, true);
 
     Simulator::Run();
     receiverHelper.GetReceiver()->Process(); // Output the results

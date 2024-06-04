@@ -32,6 +32,7 @@
 
 #include <fstream>
 #include <string>
+#include "ns3/tcp-socket-base.h"
 
 using namespace ns3;
 
@@ -40,8 +41,8 @@ NS_LOG_COMPONENT_DEFINE("TcpBulkSendExample");
 int
 main(int argc, char* argv[])
 {
-    bool tracing = false;
-    uint32_t maxBytes = 0;
+    bool tracing = true;
+    uint32_t maxBytes = 100;
 
     //
     // Allow the user to override any of the defaults at
@@ -99,13 +100,14 @@ main(int argc, char* argv[])
     sourceApps.Start(Seconds(0.0));
     sourceApps.Stop(Seconds(10.0));
 
+
     //
     // Create a PacketSinkApplication and install it on node 1
     //
-    PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
-    ApplicationContainer sinkApps = sink.Install(nodes.Get(1));
-    sinkApps.Start(Seconds(0.0));
-    sinkApps.Stop(Seconds(10.0));
+    // PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
+    // ApplicationContainer sinkApps = sink.Install(nodes.Get(1));
+    // sinkApps.Start(Seconds(0.0));
+    // sinkApps.Stop(Seconds(10.0));
 
     //
     // Set up tracing if enabled
@@ -126,8 +128,8 @@ main(int argc, char* argv[])
     Simulator::Destroy();
     NS_LOG_INFO("Done.");
 
-    Ptr<PacketSink> sink1 = DynamicCast<PacketSink>(sinkApps.Get(0));
-    std::cout << "Total Bytes Received: " << sink1->GetTotalRx() << std::endl;
+    // Ptr<PacketSink> sink1 = DynamicCast<PacketSink>(sinkApps.Get(0));
+    // std::cout << "Total Bytes Received: " << sink1->GetTotalRx() << std::endl;
 
     return 0;
 }
