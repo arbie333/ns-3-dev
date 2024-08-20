@@ -30,36 +30,36 @@ CompressionReceiver::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<CompressionReceiver> ()
     .AddAttribute ("Port",
-                   "Port on which we listen for incoming probe packets.",
-                   UintegerValue (100),
-                   MakeUintegerAccessor (&CompressionReceiver::m_port),
-                   MakeUintegerChecker<uint16_t> ())
-          .AddAttribute ("PacketWindowSize",
-                         "The size of the window used to compute the packet loss. This value should be a multiple of 8.",
-                         UintegerValue (32),
-                         MakeUintegerAccessor (&CompressionReceiver::GetPacketWindowSize,
-                                               &CompressionReceiver::SetPacketWindowSize),
-                         MakeUintegerChecker<uint16_t> (8,256))
+                    "Port on which we listen for incoming probe packets.",
+                    UintegerValue (100),
+                    MakeUintegerAccessor (&CompressionReceiver::m_port),
+                    MakeUintegerChecker<uint16_t> ())
+    .AddAttribute ("PacketWindowSize",
+                    "The size of the window used to compute the packet loss. This value should be a multiple of 8.",
+                    UintegerValue (32),
+                    MakeUintegerAccessor (&CompressionReceiver::GetPacketWindowSize,
+                                        &CompressionReceiver::SetPacketWindowSize),
+                    MakeUintegerChecker<uint16_t> (8,256))
 //    .AddAttribute ("TcpPort",
 //                   "TcpPort on which we listen for incoming tcp connections.",
 //                   UintegerValue (10),
 //                   MakeUintegerAccessor (&CompressionReceiver::m_tcpPort),
 //                   MakeUintegerChecker<uint16_t> ())
-     .AddAttribute("NumPackets",
-                   "Number of probe packets in the train",
-                   UintegerValue (100),
-                   MakeUintegerAccessor (&CompressionReceiver::m_numPackets),
-                   MakeUintegerChecker<uint32_t> ())
-      .AddAttribute("Interval",
+    .AddAttribute("NumPackets",
+                    "Number of probe packets in the train",
+                    UintegerValue (100),
+                    MakeUintegerAccessor (&CompressionReceiver::m_numPackets),
+                    MakeUintegerChecker<uint32_t> ())
+    .AddAttribute("Interval",
                     "The time to wait between probe packets in the train",
                     UintegerValue (100),
                     MakeTimeAccessor (&CompressionReceiver::m_interPacketTime),
                     MakeTimeChecker ())
-       .AddAttribute("PacketSize",
-                     "Size of packets generated. If less than 12 the timestamp will be ommitted. The minimum packet size is 2 for just the sequence header",
-                     UintegerValue (1024),
-                     MakeUintegerAccessor (&CompressionReceiver::m_probePacketLen),
-                     MakeUintegerChecker<uint32_t> (2, 10000))
+    .AddAttribute("PacketSize",
+                    "Size of packets generated. If less than 12 the timestamp will be ommitted. The minimum packet size is 2 for just the sequence header",
+                    UintegerValue (1024),
+                    MakeUintegerAccessor (&CompressionReceiver::m_probePacketLen),
+                    MakeUintegerChecker<uint32_t> (2, 10000))
   ;
   return tid;
 }
@@ -254,11 +254,15 @@ CompressionReceiver::~CompressionReceiver()
         }
         output.close();
         delete [] m_results;
+        
+        double ratio = double(m_received) / double(m_numPackets);
 
         NS_LOG_INFO ("Saved results to: " << m_name);
         std::cout<<"ChunkSize:"<<chunkSize<<std::endl;
-        std::cout<<"Recieved:"<<m_received<<std::endl;
+        std::cout<<"Received:"<<m_received<<std::endl;
+        std::cout<<"Receipt:"<<ratio<<std::endl;
         std::cout<<"Duration: " << (max - min) / 1000 << "ms" << std::endl;
+        std::cout<<"--------------------------"<<std::endl;
         return;
     }
 } // Namespace ns3

@@ -59,13 +59,16 @@ main(int argc, char* argv[])
     std::string compLinkCapacity;
     std::string entropyString;
     std::string payloadString;
+    std::string thresholdNumber;
+    uint32_t queueSize = 60;
 
     cmd.AddValue("filename", "Name of the config file", filename);
     cmd.AddValue("packetNumber", "Number of packets to send", packetNumber);
-    cmd.AddValue("compLinkCap", "Capacity of the compression link",
-                 compLinkCapacity);
+    cmd.AddValue("compLinkCap", "Capacity of the compression link", compLinkCapacity);
     cmd.AddValue("entropy", "Entropy of the UDP packets", entropyString);
     cmd.AddValue("payload", "Size of the UDP payload", payloadString);
+    cmd.AddValue("threshold", "compression detection threshold of lossing packet ratio", thresholdNumber);
+    cmd.AddValue("queueSize", "Size of the router's queue", queueSize);
     cmd.Parse(argc, argv);
 
     if (filename.empty())
@@ -75,7 +78,7 @@ main(int argc, char* argv[])
     }
 
     // Set the packet number
-    int packet_number =6000;
+    int packet_number = 6000;
     if (!packetNumber.empty())
     {
         packet_number= std::stoi(packetNumber);
@@ -110,7 +113,20 @@ main(int argc, char* argv[])
     }
     std::cout << "Payload size: " << payloadSize << std::endl;
 
-    double_t send_interval = 0.00000001;
+    // Set the threshold
+    int threshold_number = 20;
+    if (!thresholdNumber.empty())
+    {
+        threshold_number = std::stoi(thresholdNumber);
+        if (threshold_number <= 0 || threshold_number > 100)
+        {
+            std::cerr << "Invalid threshold number" << std::endl;
+            threshold_number = 20;
+        }
+    }
+    std::cout << "Threshold: " << threshold_number << std::endl;
+
+    double_t send_interval = 0.001;
     std::string outerLinkCapacity =
         "100Mbps";                 // default capacity of the outer link (non compression link)
     bool enableCompression = true; // default value for compression
@@ -137,7 +153,9 @@ main(int argc, char* argv[])
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute("DataRate", StringValue(outerLinkCapacity));
     p2p.SetChannelAttribute("Delay", StringValue("2ms"));
-    p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue("655350000p"));
+    // p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue("655350000p"));
+    p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue(std::to_string(queueSize) + "p"));
+
     NetDeviceContainer s0p0_device =
         p2p.Install(s0p0); // set the link properties of sender to router1
     NetDeviceContainer p1r0_device =
@@ -152,10 +170,12 @@ main(int argc, char* argv[])
     // Set p0 to be a compression device
     Ptr<CompressionNetDevice> p0_device = DynamicCast<CompressionNetDevice>(p0p1_device.Get(0));
     p0_device->SetEnableCompression(enableCompression);
-    p0_device->GetQueue()->SetAttribute("MaxSize", StringValue("655350000p"));
+    p0_device->GetQueue()->SetAttribute("MaxSize", StringValue(std::to_string(queueSize) + "p"));
+
     // Set p1 to be a compression device
     Ptr<CompressionNetDevice> p1_device = DynamicCast<CompressionNetDevice>(p0p1_device.Get(1));
     p1_device->SetEnableDecompression(enableCompression);
+    p1_device->GetQueue()->SetAttribute("MaxSize", StringValue(std::to_string(queueSize) + "p"));
 
     // Create the Internet stacks
     InternetStackHelper stack;
