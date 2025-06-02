@@ -1,15 +1,21 @@
 
 #!/bin/bash
 
-outputFile="packet_number" # set the destination file
+# outputFile="packet_number" # set the destination file
+outputFile="rst_delay_results_packetNum.txt"
 > $outputFile # clean the destination file
 
-for packetNum in 500 1000 1500 2000 2500 3000 3500 4000 4500 5000 5500 6000 6500 7000 7500 8000 8500 9000 9500 10000; do
+simu="packetNum"
+
+for packetNum in 250 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000; do
   for entropy in l h; do
-    for queueSize in 1 60; do
-      ./ns3 run compression-exp -- --filename=myconfig.txt --packetNumber=$packetNum --compLinkCap=2Mbps --entropy=$entropy --queueSize=$queueSize
-      # get the results
-      python3 getSimuRes.py $outputFile $entropy $packetNum $queueSize
-    done
+    ./ns3 run compression-exp -- --filename=myconfig.txt --payload=1100 --packetNumber=$packetNum --compLinkCap=2Mbps --entropy=$entropy --queueSize=10000
+    
+    # loss rate based
+    # python3 getSimuRes.py $outputFile $entropy $packetNum
+
+    # delay based
+    python3 getDelay.py $entropy $packetNum $simu
+
   done
 done

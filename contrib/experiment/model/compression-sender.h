@@ -41,6 +41,7 @@ public:
   void SetEntropy (uint8_t entropy);
   void SetLogFileName (std::string name);
   void SendTcpTailPacket (void);
+  void Send (void);  
 
 protected:
   virtual void DoDispose (void);
@@ -55,8 +56,6 @@ private:
   // If mode 1, schedule SendICMP()
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-
-  void Send (void);  
 
   // // Record the time when a RST packet is received
   // void HandleRstPacket (Ptr<Socket> socket);

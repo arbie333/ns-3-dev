@@ -218,6 +218,7 @@ class RttHistory
 class TcpSocketBase : public TcpSocket
 {
   public:
+    void SetSynRetries(uint32_t count) override;
     /**
      * Get the type ID.
      * \brief Get the type ID.
@@ -633,7 +634,7 @@ class TcpSocketBase : public TcpSocket
     uint32_t GetInitialCwnd() const override;
     void SetConnTimeout(Time timeout) override;
     Time GetConnTimeout() const override;
-    void SetSynRetries(uint32_t count) override;
+    
     uint32_t GetSynRetries() const override;
     void SetDataRetries(uint32_t retries) override;
     uint32_t GetDataRetries() const override;

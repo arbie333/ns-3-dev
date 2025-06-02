@@ -312,14 +312,15 @@ class TcpHeader : public Header
      * \return true if the operands are equal
      */
     friend bool operator==(const TcpHeader& lhs, const TcpHeader& rhs);
-
-  private:
+   
     /**
      * \brief Calculate the header checksum
      * \param size packet size
      * \returns the checksum
      */
     uint16_t CalculateHeaderChecksum(uint16_t size) const;
+
+  private:
 
     /**
      * \brief Calculates the header length (in words)

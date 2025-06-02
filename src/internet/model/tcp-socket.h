@@ -56,7 +56,12 @@ class TcpSocket : public Socket
 
     TcpSocket();
     ~TcpSocket() override;
-
+    
+    /**
+     * \brief Set the number of connection retries before giving up.
+     * \param count the number of connection retries
+     */
+    virtual void SetSynRetries(uint32_t count) = 0;
     /**
      * \ingroup tcp
      * \brief Names of the 11 TCP states
@@ -169,11 +174,7 @@ class TcpSocket : public Socket
      */
     virtual Time GetConnTimeout() const = 0;
 
-    /**
-     * \brief Set the number of connection retries before giving up.
-     * \param count the number of connection retries
-     */
-    virtual void SetSynRetries(uint32_t count) = 0;
+    
 
     /**
      * \brief Get the number of connection retries before giving up.

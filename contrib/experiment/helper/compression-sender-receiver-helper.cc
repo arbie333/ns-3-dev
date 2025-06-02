@@ -98,17 +98,17 @@ CompressionSenderHelper::SetAttribute (std::string name, const AttributeValue &v
   m_factory.Set (name, value);
 }
 
-ApplicationContainer
-CompressionSenderHelper::Install (NodeContainer c)
+ApplicationContainer CompressionSenderHelper::Install (NodeContainer c)
 {
   ApplicationContainer apps;
   for (NodeContainer::Iterator i = c.Begin (); i != c.End (); ++i)
-    {
-      Ptr<Node> node = *i;
-      m_sender = m_factory.Create<CompressionSender> ();
-      node->AddApplication (m_sender);
-      apps.Add (m_sender);
-    }
+  {
+    Ptr<Node> node = *i;
+    m_sender = m_factory.Create<CompressionSender> ();
+
+    node->AddApplication (m_sender);
+    apps.Add (m_sender);
+  }
   return apps;
 }
 

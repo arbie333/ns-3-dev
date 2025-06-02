@@ -60,7 +60,7 @@ main(int argc, char* argv[])
     std::string entropyString;
     std::string payloadString;
     std::string thresholdNumber;
-    uint32_t queueSize = 60;
+    uint32_t queueSize = 10000;
 
     cmd.AddValue("filename", "Name of the config file", filename);
     cmd.AddValue("packetNumber", "Number of packets to send", packetNumber);
@@ -126,9 +126,8 @@ main(int argc, char* argv[])
     }
     std::cout << "Threshold: " << threshold_number << std::endl;
 
-    double_t send_interval = 0.001;
-    std::string outerLinkCapacity =
-        "100Mbps";                 // default capacity of the outer link (non compression link)
+    double_t send_interval = 0.0000000001;
+    std::string outerLinkCapacity = "10Mbps"; // default capacity of the outer link (non compression link)
     bool enableCompression = true; // default value for compression
 
     // Read the config file
@@ -152,18 +151,23 @@ main(int argc, char* argv[])
 
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute("DataRate", StringValue(outerLinkCapacity));
-    p2p.SetChannelAttribute("Delay", StringValue("2ms"));
-    // p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue("655350000p"));
-    p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue(std::to_string(queueSize) + "p"));
+    p2p.SetChannelAttribute("Delay", StringValue("5ms"));
+    p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue(std::to_string(10000) + "p"));
 
     NetDeviceContainer s0p0_device =
         p2p.Install(s0p0); // set the link properties of sender to router1
-    NetDeviceContainer p1r0_device =
-        p2p.Install(p1r0); // set the link properties of router2 to receiver
+
+    // Configure the link between p1 and r0
+    PointToPointHelper p2p_p1r0;
+    p2p_p1r0.SetDeviceAttribute("DataRate", StringValue(outerLinkCapacity));
+    p2p_p1r0.SetChannelAttribute("Delay", StringValue("5ms"));
+    p2p_p1r0.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue(std::to_string(10000) + "p"));
+
+    NetDeviceContainer p1r0_device = p2p_p1r0.Install(p1r0); // set the link properties of router2 to receiver
 
     CompressionHelper compHepler;
     compHepler.SetDeviceAttribute("DataRate", StringValue(compLinkCapacity));
-    compHepler.SetChannelAttribute("Delay", StringValue("2ms"));
+    compHepler.SetChannelAttribute("Delay", StringValue("5ms"));
     NetDeviceContainer p0p1_device =
         compHepler.Install(p0p1); // set the link properties of router1 to router2
 
@@ -240,8 +244,7 @@ std::string
 trim(const std::string& str)
 {
     size_t start = str.find_first_not_of(' ');
-    return (start == std::string::npos) ? ""
-                                        : str.substr(start, str.find_last_not_of(' ') + 1 - start);
+    return (start == std::string::npos) ? "" : str.substr(start, str.find_last_not_of(' ') + 1 - start);
 }
 
 bool

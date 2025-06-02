@@ -14,10 +14,12 @@ with open('compression_link_output', 'r') as file:
     
     # neg/nonneg
     val = (neg / len(lines)) * 100
+    print("python script result: ", val)
 
 with open('compression_link_output', 'r') as file:
     content = file.read()
 
+# write it to the output file
 with open(args[1], 'a') as file:
     file.write('{},'.format(','.join(args[2:5])))
     file.write('{}\n'.format(val))

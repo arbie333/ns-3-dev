@@ -127,7 +127,7 @@ CompressionReceiver::~CompressionReceiver()
     {
         NS_LOG_FUNCTION (this);
 
-        if (m_socket == 0)
+        if (m_socket == nullptr)
         {
             TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
             m_socket = Socket::CreateSocket (GetNode (), tid);
@@ -141,7 +141,7 @@ CompressionReceiver::~CompressionReceiver()
 
         m_socket->SetRecvCallback (MakeCallback (&CompressionReceiver::HandleRead, this));
 
-        if (m_socket6 == 0)
+        if (m_socket6 == nullptr)
         {
             TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
             m_socket6 = Socket::CreateSocket (GetNode (), tid);
@@ -163,7 +163,7 @@ CompressionReceiver::~CompressionReceiver()
     {
         NS_LOG_FUNCTION (this);
 
-        if (m_socket != 0)
+        if (m_socket != nullptr)
         {
             m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
         }
@@ -260,7 +260,7 @@ CompressionReceiver::~CompressionReceiver()
         NS_LOG_INFO ("Saved results to: " << m_name);
         std::cout<<"ChunkSize:"<<chunkSize<<std::endl;
         std::cout<<"Received:"<<m_received<<std::endl;
-        std::cout<<"Receipt:"<<ratio<<std::endl;
+        std::cout<<"Loss Rate:"<<(1 - ratio) * 100<<"%"<<std::endl;
         std::cout<<"Duration: " << (max - min) / 1000 << "ms" << std::endl;
         std::cout<<"--------------------------"<<std::endl;
         return;
